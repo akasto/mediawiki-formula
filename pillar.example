@@ -1,0 +1,8 @@
+mediawiki:
+  db:
+# what db user should be used to access the db
+    user: root
+    password: goodstrongpassword
+# password to give to mysql root user
+    root_password: goodstrongpassword
+  site_name: My Wiki

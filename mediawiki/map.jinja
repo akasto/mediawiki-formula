@@ -1,0 +1,19 @@
+{% import_yaml 'mediawiki/defaults.yml' as default_settings %}
+
+{## Setup for possible platform specific settings ##}
+{% set os_family_map = salt['grains.filter_by']({
+    'Debian': {}
+  }, 
+  grain = "os_family")
+%}
+
+{## Merge the platform specific settings over our defaults one ##}
+{% do default_settings.mediawiki.update(os_family_map) %}
+
+{## Merge the pillar data and the default settings into the settings dict we want. ##}
+{% set settings = salt['pillar.get'](
+  'mediawiki',
+  default=default_settings.mediawiki,
+  merge=True
+)
+%}

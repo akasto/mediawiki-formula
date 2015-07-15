@@ -1,0 +1,11 @@
+mediawiki:
+  db:
+    user: root
+    password: admin123
+    root_password: admin123
+  site_name: Mediawiki
+  fqdn: http://{{ grains['ip_interfaces']['eth0'][0] }}
+  upgrade_key: {{ salt['random.get_str'](16) }} 
+  emergency_contact: apache@localhost
+  password_sender: apache@localhost
+  secret_key: {{ salt['random.get_str'](64) }}
