@@ -5,4 +5,7 @@ mediawiki:
     password: goodstrongpassword
 # password to give to mysql root user
     root_password: goodstrongpassword
+  admin:
+    username: admin
+    password: passtoaccesswiki
   site_name: My Wiki

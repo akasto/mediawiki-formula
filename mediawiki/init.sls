@@ -3,9 +3,8 @@
 install apache:
   pkg.installed:
     - name: apache2
-  service:
+  service.running:
     - name: apache2
-    - running
 
 install php5:
   pkg.installed:
@@ -23,6 +22,34 @@ install imagemagick:
   pkg.installed:
     - name: imagemagick
 
+mysql_setup:
+  debconf.set:
+    - name: mysql-server-5.5
+    - data:
+        'mysql-server/root_password': {'type': 'password', 'value': '{{ settings.db.root_password }}'}
+        'mysql-server/root_password_again': {'type': 'password', 'value': '{{ settings.db.root_password }}'}
+
+# needed to start mysql on machines with low memory.
+mysql limited memory config:
+  file.managed:
+    - name: /etc/mysql/conf.d/limited_memory.cnf
+    - source: salt://mediawiki/files/limited_memory.cnf
+
+mysql-server:
+  pkg.installed:
+    - name: mysql-server
+    - require:
+      - debconf: mysql_setup
+  service.running:
+    - name: mysql
+    - watch:
+      - pkg: mysql-server
+
+# Needed for saltstack mysql management.
+install python-mysqldb:
+  pkg.installed:
+    - name: python-mysqldb
+
 mediawiki:
   archive.extracted:
     - name: /var/www/html
@@ -38,7 +65,12 @@ rename to mediawiki:
     - source: /var/www/html/mediawiki-1.25.1
     - force: True
 
-mediawiki LocalSettings:
+install mediawiki:
+  cmd.run:
+    - name : php /var/www/html/mediawiki/maintenance/install.php {{ settings.site_name }} {{ settings.admin.username }} --pass {{ settings.admin.password }} --dbuser {{ settings.db.user }} --dbpass {{ settings.db.password }}
+    - onlyif: test -e /etc/mysql/conf.d/limited_memory.cnf # should use mysql.db_exists. Only run if file doesnt exist
+
+LocalSettings:
   file.managed:
     - name: /var/www/html/mediawiki/LocalSettings.php
     - source: salt://mediawiki/files/LocalSettings.php
@@ -52,33 +84,7 @@ mediawiki LocalSettings:
         emergency_contact: {{ settings.emergency_contact }}
         password_sender: {{ settings.password_sender }}
         secret_key: {{ settings.secret_key }}
-
-mysql_setup:
-  debconf.set:
-    - name: mysql-server-5.5
-    - data:
-        'mysql-server/root_password': {'type': 'password', 'value': '{{ settings.db.root_password }}'}
-        'mysql-server/root_password_again': {'type': 'password', 'value': '{{ settings.db.root_password }}'}
-
-# needed to start mysql on machines with low memory.
-mysql limited memory config:
-  file.managed:
-    - name: /etc/mysql/conf.d/limited_memory.cnf
-    - source: salt://mediawiki/files/limited_memory.cnf
-
-mysql-server:
-  pkg:
-    - installed
-    - require:
-      - debconf: mysql_setup
-  service:
-    - name: mysql
-    - running
+  service.running:
+    - name: apache2
     - watch:
-      - pkg: mysql-server
-
-# Needed for saltstack mysql management.
-install python-mysqldb:
-  pkg.installed:
-    - name: python-mysqldb
-
+      - file: LocalSettings
